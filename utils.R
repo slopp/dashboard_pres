@@ -1,5 +1,25 @@
-library(jsonlite)
+mapDescIcon <- function(desc){
+  desc
+  desc = sub(pattern = "Light", replacement = "", desc, fixed = TRUE)
+  desc = sub(pattern = "Heavy", replacement = "", desc, fixed = TRUE)
+  curIcon = "ion-android-sunny"
+  if (grepl(pattern = "*Snow*|*Ice*", x = desc))
+    curIcon = "ion-ios-snow"
+  if (grepl(pattern = "*Rain*|*Drizzle*|*Hail*", x = desc))
+    curIcon = "ion-ios-rainy-outline"
+  if (grepl(pattern = "*Cloud*|*Overcast*|*Fog*", x= desc))
+    curIcon = "ion-ios-cloud-outline"
+  curIcon
+}
 
+mapTempIcon <- function(tmp){
+  tempIcon = "fa-thermometer-half"
+  if(tmp < 15)
+    tempIcon = "fa-thermometer-empty"
+  if(tmp > 30 )
+    tempIcon = "fa-thermometer-full"
+  tempIcon
+}
 getKnownAreas <- function(){
   data.frame(
     resorts = c("Abasin", 

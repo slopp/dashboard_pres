@@ -1,0 +1,18 @@
+.navbar-inverse {
+    background-color: #9db0ea;
+    border-color: #9db0ea;
+}
+
+.bg-primary {
+    background-color: #2c62ba;
+}
+
+.bg-warning {
+   background-color: #9db0ea;
+   color: #ffffff;
+}
+
+.section.sidebar {
+    background-color: #e8edf4;
+}
+

@@ -1,0 +1,151 @@
+---
+title: Current Conditions
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    theme: journal
+    css: styles_dashboard.css
+runtime: shiny
+---
+
+```{r setup}
+library(ggplot2)
+source("utils.R")
+library(jsonlite)
+library(flexdashboard)
+library(shiny)
+opts <- getKnownAreas()
+resorts <- opts$resorts
+```
+
+Sidebar {.sidebar}
+--------------------
+```{r}
+areas <- reactiveFileReader(5000, session = NULL, filePath = "area.rds", readFunc = readRDS)
+weather <- reactive({
+  invalidateLater(60000, session = NULL)
+  w <- lapply(resorts, getCurrentWeather)
+  Sys.sleep(0.1)
+  w
+})
+
+selectInput("resort", "Select Resort", choices = resorts, selected = "Abasin")
+
+
+curArea <- reactive({
+  ind <- which(resorts==input$resort)
+  areas()[[ind]]
+})
+
+areaWeather <- reactive({
+  ind <- which(resorts==input$resort)
+  weather()[[ind]]
+})
+
+renderUI({tags$img(src=curArea()$logo)})
+```
+
+
+
+Summary {data-height=30}
+----------
+
+
+### Last 48 Hours {data-width=30}
+```{r}
+renderValueBox({
+valueBox(caption = curArea()$secondarySurfaceCondition,
+                 
+         value = paste0(curArea()$snowLast48Hours,'"'),
+         icon="ion-ios-snowy")
+})
+```
+
+### Base {data-width=30}
+
+```{r} 
+renderValueBox({
+valueBox(value=paste0(curArea()$avgBaseDepthMax, '"'), caption = "Base", color="warning", icon="fa-map-signs")
+})
+```
+
+### Weather {data-width=30}
+
+```{r} 
+renderValueBox({
+weather_icon <- mapDescIcon(areaWeather()$weather)
+valueBox(caption=areaWeather()$weather, value =  areaWeather()$feelslike_string, icon=weather_icon, color="primary")
+})
+```
+
+
+Charts {data-height=70}
+------------
+
+### Snow Forecast
+```{r}
+renderPlot({
+f <- data.frame(
+    label=c("24 Hours", "48 Hours","72 Hours"),
+    value = c(curArea()$predictedSnowFall_24Hours,
+              curArea()$predictedSnowFall_48Hours,
+              curArea()$predictedSnowFall_72Hours),
+    stringsAsFactors = FALSE
+  )
+f$value <- as.numeric(f$value)
+ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#9db0ea") +
+  scale_x_discrete(labels=f$label, breaks=1:3) +
+  scale_y_continuous(limits=c(0, max(f$value))) + 
+  xlab("") +
+  ylab("")+
+  theme_minimal() 
+})
+```
+
+### Runs
+
+```{r}
+renderPlot({
+d <- data.frame(
+  cur = c(curArea()$openDownHillTrails, curArea()$openDownHillLifts),
+  max = c(curArea()$maxOpenDownHillTrails, curArea()$maxOpenDownHillLifts),
+  pos = 1:2,
+  stringsAsFactors = FALSE
+)
+
+d <- lapply(d, as.numeric)
+d$labels <- c("Runs", "Lifts")
+d$percent <- round((d$cur / d$max)*100, digits=0)
+d$lab <- paste0(d$cur, "/", d$max, " ", d$percent, "%")
+d$labloc <- d$percent+10
+d$col <- ifelse(d$percent < 80, ifelse(d$percent < 50, 1, 2), 3)
+d <- as.data.frame(d)
+ggplot(d, aes(x=factor(pos))) + 
+         geom_bar(aes(y=100), fill="#e8edf4", stat="identity") +
+         geom_bar(aes(y=percent, fill=factor(col)), stat="identity") + 
+         geom_text(aes(y=labloc, label=lab)) +
+  xlab("") + ylab("") +
+  scale_x_discrete(labels=c("Trails", "Lifts")) +
+  scale_y_continuous(labels=NULL, breaks = NULL) +
+  scale_fill_manual(values=c("firebrick", "orange", "green"), guide=FALSE) +
+  theme_minimal() +
+  coord_flip()
+})
+```
+
+
+Acknowledgement {data-height=2}
+------------
+![](sclogo.png) ![](wulogo.jpg) ![](rslogo.png) <br>
+Data Courtesy of Snocountry and Weather Underground. Report by RStudio. <br>
+Not to be used for commercial purposes.
+
+###
+```{r}
+renderText({
+  curArea()
+  areaWeather()
+  paste0("Last Updated on: ",Sys.Date(), " at ", format(Sys.time(), '%r'))
+})
+```
+

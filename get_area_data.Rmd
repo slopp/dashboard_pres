@@ -1,0 +1,13 @@
+---
+output: html_document
+---
+
+```{r}
+library(jsonlite)
+source("utils.R")
+areas <- getKnownAreas()
+resorts <- areas$resorts
+area <- lapply(resorts, getAreaData)
+saveRDS(area, file = "area.rds")
+```
+

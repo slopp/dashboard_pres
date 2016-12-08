@@ -1,11 +1,10 @@
 ---
+title: Current Conditions
 output: 
-  html_document:
-    includes:
-      after_body: acknowledge.html
+  flexdashboard::flex_dashboard:
+    orientation: rows
     theme: journal
-    css: styles.css
-    stand_alone: TRUE 
+    css: styles_dashboard.css
 params:
   resort:
     label: "Select Resort:"
@@ -14,30 +13,48 @@ params:
     choices: !r source("utils.R"); . <- getKnownAreas(); .$resorts
 ---
 
-
-```{r setup, warning=FALSE, echo=FALSE,message=FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo=FALSE)
+```{r setup}
 library(ggplot2)
 source("utils.R")
 library(jsonlite)
+library(flexdashboard)
 area <- getAreaData(params$resort)
 weather <- getCurrentWeather(params$resort)
-Sys.sleep(0.2)
 ```
 
-<center>![](`r area$logo`)</center>
 
-## `r area$resortName` on `r Sys.Date()` at `r format(Sys.time(), "%r")`
+Summary {data-height=15}
+----------
+
+### {data-width=10} 
+![](`r area$logo`)
+
+### Last 48 Hours {data-width=30}
+```{r}
+
+valueBox(caption = area$secondarySurfaceCondition,
+                 
+         value = paste0(area$snowLast48Hours,'"'),
+         icon="ion-ios-snowy")
+```
+
+### Base {data-width=20}
+
+```{r} 
+
+valueBox(value=paste0(area$avgBaseDepthMax, '"'), caption = "Base", color="warning", icon="fa-map-signs")
+```
+
+### Weather {data-width=30}
+
+```{r} 
+weather_icon <- mapDescIcon(weather$weather)
+valueBox(caption=weather$weather, value =  weather$feelslike_string, icon=weather_icon, color="primary")
+```
 
 
-### `r area$secondarySurfaceCondition` 
-Last 48 Hours: `r area$snowLast48Hours`" 
-Base: `r area$avgBaseDepthMax`"
-
- 
-### `r weather$weather` <br>
-`r weather$temperature_string` <br>
-Feels Like `r weather$feelslike_string`  
+Charts {data-height=70}
+------------
 
 ### Snow Forecast
 ```{r}
@@ -49,14 +66,13 @@ f <- data.frame(
     stringsAsFactors = FALSE
   )
 f$value <- as.numeric(f$value)
-ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#96b9f2") +
+ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#9db0ea") +
   scale_x_discrete(labels=f$label, breaks=1:3) +
   scale_y_continuous(limits=c(0, max(f$value))) + 
   xlab("") +
   ylab("")+
   theme_minimal() 
 ```
-
 
 ### Runs
 
@@ -85,17 +101,14 @@ ggplot(d, aes(x=factor(pos))) +
   scale_fill_manual(values=c("firebrick", "orange", "green"), guide=FALSE) +
   theme_minimal() +
   coord_flip()
-
 ```
 
 
-
-
-
-
-
-
-
+Acknowledgement {data-height=2}
+------------
+![](sclogo.png) ![](wulogo.jpg) ![](rslogo.png) <br>
+Data Courtesy of Snocountry and Weather Underground. Report by RStudio. <br>
+Not to be used for commercial purposes.
 
 
 

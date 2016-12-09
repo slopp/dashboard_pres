@@ -17,13 +17,22 @@ library(shiny)
 opts <- getKnownAreas()
 resorts <- opts$resorts
 
-areas <- reactiveFileReader(5000, session = NULL, filePath = "area.rds", readFunc = readRDS)
+# area.rds is updated daily based on a schedule run of the 
+# get_area_data.Rmd file
+# this could be put in the data chunk of shiny pre-rendered
+areas <- reactiveFileReader(5000,
+                            session = NULL,
+                            filePath = "area.rds",
+                            readFunc = readRDS)
+
+# check the weather for all resorts every minute
 weather <- reactive({
   invalidateLater(60000, session = NULL)
   w <- lapply(resorts, getCurrentWeather)
-  Sys.sleep(0.1)
+  Sys.sleep(0.1) #ensures API results are returned successfully
   w
 })
+
 ```
 
 
@@ -86,20 +95,18 @@ renderText({
 ```
 
 
-Specific Resort
-============================
-
 Sidebar {.sidebar}
 --------------------
 ```{r}
-selectInput("resort", "Select Resort", choices = resorts, selected = "Abasin")
+selectInput("resort", "", choices = resorts, selected = "Abasin")
 
-
+# get weather for the selected resort
 curArea <- reactive({
   ind <- which(resorts==input$resort)
   areas()[[ind]]
 })
 
+# get weather for the selected report
 areaWeather <- reactive({
   ind <- which(resorts==input$resort)
   weather()[[ind]]
@@ -128,7 +135,10 @@ valueBox(caption = curArea()$secondarySurfaceCondition,
 
 ```{r} 
 renderValueBox({
-valueBox(value=paste0(curArea()$avgBaseDepthMax, '"'), caption = "Base", color="warning", icon="fa-map-signs")
+  valueBox(value = paste0(curArea()$avgBaseDepthMax, '"'),
+           caption = "Base",
+           color="warning",
+           icon="fa-map-signs")
 })
 ```
 
@@ -136,8 +146,11 @@ valueBox(value=paste0(curArea()$avgBaseDepthMax, '"'), caption = "Base", color="
 
 ```{r} 
 renderValueBox({
-weather_icon <- mapDescIcon(areaWeather()$weather)
-valueBox(caption=areaWeather()$weather, value =  areaWeather()$feelslike_string, icon=weather_icon, color="primary")
+  weather_icon <- mapDescIcon(areaWeather()$weather)
+  valueBox(caption = areaWeather()$weather,
+           value =  areaWeather()$feelslike_string,
+           icon=weather_icon,
+           color="primary")
 })
 ```
 
@@ -147,53 +160,60 @@ Charts {data-height=70}
 
 ### Snow Forecast
 ```{r}
+
 renderPlot({
-f <- data.frame(
+  #get forecasted data
+  f <- data.frame(
     label=c("24 Hours", "48 Hours","72 Hours"),
-    value = c(curArea()$predictedSnowFall_24Hours,
+    value = as.numeric(
+            c(curArea()$predictedSnowFall_24Hours,
               curArea()$predictedSnowFall_48Hours,
-              curArea()$predictedSnowFall_72Hours),
+              curArea()$predictedSnowFall_72Hours)),
     stringsAsFactors = FALSE
   )
-f$value <- as.numeric(f$value)
-ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#9db0ea") +
-  scale_x_discrete(labels=f$label, breaks=1:3) +
-  scale_y_continuous(limits=c(0, max(f$value))) + 
-  xlab("") +
-  ylab("")+
-  theme_minimal() 
+  
+  #generate plot  
+  ggplot(f) + 
+    geom_bar(
+      aes(x = factor(1:3), y = value), 
+      stat="identity", 
+      fill = "#f4a34b") +
+    scale_x_discrete(labels = f$label, breaks = 1:3) +
+    scale_y_continuous(limits = c(0, max(f$value))) + 
+    xlab("") +
+    ylab("")+
+    theme_minimal() 
 })
 ```
 
 ### Runs
 
 ```{r}
-renderPlot({
-d <- data.frame(
-  cur = c(curArea()$openDownHillTrails, curArea()$openDownHillLifts),
-  max = c(curArea()$maxOpenDownHillTrails, curArea()$maxOpenDownHillLifts),
-  pos = 1:2,
-  stringsAsFactors = FALSE
-)
-
-d <- lapply(d, as.numeric)
-d$labels <- c("Runs", "Lifts")
-d$percent <- round((d$cur / d$max)*100, digits=0)
-d$lab <- paste0(d$cur, "/", d$max, " ", d$percent, "%")
-d$labloc <- d$percent+10
-d$col <- ifelse(d$percent < 80, ifelse(d$percent < 50, 1, 2), 3)
-d <- as.data.frame(d)
-ggplot(d, aes(x=factor(pos))) + 
-         geom_bar(aes(y=100), fill="#e8edf4", stat="identity") +
-         geom_bar(aes(y=percent, fill=factor(col)), stat="identity") + 
-         geom_text(aes(y=labloc, label=lab)) +
-  xlab("") + ylab("") +
-  scale_x_discrete(labels=c("Trails", "Lifts")) +
-  scale_y_continuous(labels=NULL, breaks = NULL) +
-  scale_fill_manual(values=c("firebrick", "orange", "green"), guide=FALSE) +
-  theme_minimal() +
-  coord_flip()
+d <- reactive({
+  tmp <- data.frame(
+    cur = as.numeric(c(curArea()$openDownHillTrails,
+                     curArea()$openDownHillLifts)),
+    max = as.numeric(c(curArea()$maxOpenDownHillTrails,
+                     curArea()$maxOpenDownHillLifts)),
+    labels = c("Trails", "Lifts"),
+    stringsAsFactors = FALSE
+  )
+  tmp$percent <- round((tmp$cur / tmp$max)*100, digits=0)
+  tmp
 })
+
+# Trails
+renderGauge({
+  p <- d()$percent[1]
+  createPercentGauge(p,"Trails Open")
+  })
+
+# Lifts 
+renderGauge({
+  p <- d()$percent[2]
+  createPercentGauge(p,"Lifts Open")
+  })
+
 ```
 
 

@@ -112,3 +112,20 @@ getCurrentWeather <- function(area_name){
   results$current_observation 
 }
 
+#' flexdashboard Gauge with %
+#'
+#' @param data Data frame with column percent
+#' @param rowId Which row of the dataframe should this gauge show?
+#' @param label Label used under value
+#'
+#' @return Gauge element to be used
+createPercentGauge <- function(percent, label) {
+  gauge(percent,
+        min = 0, 
+        max = 100,
+        symbol = "%", 
+        label = label,
+        gaugeSectors(success = c(80,100),
+                     danger = c(0,80), 
+                     colors = c("#2c62ba","warning","#f4a34b")))
+}

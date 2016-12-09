@@ -18,6 +18,8 @@ library(ggplot2)
 source("utils.R")
 library(jsonlite)
 library(flexdashboard)
+
+
 area <- getAreaData(params$resort)
 weather <- getCurrentWeather(params$resort)
 ```
@@ -83,35 +85,26 @@ ggplot(f) +
   xlab("") +
   ylab("")+
   theme_minimal() 
+
 ```
 
 ### Runs
 
 ```{r}
 d <- data.frame(
-  cur = c(area$openDownHillTrails, area$openDownHillLifts),
-  max = c(area$maxOpenDownHillTrails, area$maxOpenDownHillLifts),
-  pos = 1:2,
+  cur = as.numeric(c(area$openDownHillTrails, area$openDownHillLifts)),
+  max = as.numeric(c(area$maxOpenDownHillTrails, area$maxOpenDownHillLifts)),
+  labels = c("Trails", "Lifts"),
   stringsAsFactors = FALSE
 )
-
-d <- lapply(d, as.numeric)
-d$labels <- c("Runs", "Lifts")
 d$percent <- round((d$cur / d$max)*100, digits=0)
-d$lab <- paste0(d$cur, "/", d$max, " ", d$percent, "%")
-d$labloc <- d$percent+10
-d$col <- ifelse(d$percent < 80, ifelse(d$percent < 50, 1, 2), 3)
-d <- as.data.frame(d)
-ggplot(d, aes(x=factor(pos))) + 
-         geom_bar(aes(y=100), fill="lightgrey", stat="identity") +
-         geom_bar(aes(y=percent, fill=factor(col)), stat="identity") + 
-         geom_text(aes(y=labloc, label=lab)) +
-  xlab("") + ylab("") +
-  scale_x_discrete(labels=c("Trails", "Lifts")) +
-  scale_y_continuous(labels=NULL, breaks = NULL, limits = c(0,110)) +
-  scale_fill_manual(values=c("firebrick", "orange", "green"), guide=FALSE) +
-  theme_minimal() +
-  coord_flip()
+
+
+# Trails
+createPercentGauge(d$percent[1],"Trails Open")
+
+# Lifts 
+createPercentGauge(d$percent[2],"Lifts Open")
 ```
 
 

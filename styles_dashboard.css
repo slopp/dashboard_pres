@@ -7,6 +7,10 @@
     background-color: #2c62ba;
 }
 
+.bg-danger {
+    background-color: #f4a34b;
+}
+
 .bg-warning {
    background-color: #4bbcf4;
    color: #ffffff;

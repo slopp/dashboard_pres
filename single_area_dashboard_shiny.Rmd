@@ -21,22 +21,32 @@ resorts <- opts$resorts
 Sidebar {.sidebar}
 --------------------
 ```{r}
-areas <- reactiveFileReader(5000, session = NULL, filePath = "area.rds", readFunc = readRDS)
+
+# area.rds is updated daily based on a schedule run of the 
+# get_area_data.Rmd file
+# this could be put in the data chunk of shiny pre-rendered
+areas <- reactiveFileReader(5000,
+                            session = NULL,
+                            filePath = "area.rds",
+                            readFunc = readRDS)
+
+# check the weather for all resorts every minute
 weather <- reactive({
   invalidateLater(60000, session = NULL)
   w <- lapply(resorts, getCurrentWeather)
-  Sys.sleep(0.1)
+  Sys.sleep(0.1) #ensures API results are returned successfully
   w
 })
 
 selectInput("resort", "", choices = resorts, selected = "Abasin")
 
-
+# get weather for the selected resort
 curArea <- reactive({
   ind <- which(resorts==input$resort)
   areas()[[ind]]
 })
 
+# get weather for the selected report
 areaWeather <- reactive({
   ind <- which(resorts==input$resort)
   weather()[[ind]]
@@ -65,7 +75,10 @@ valueBox(caption = curArea()$secondarySurfaceCondition,
 
 ```{r} 
 renderValueBox({
-valueBox(value=paste0(curArea()$avgBaseDepthMax, '"'), caption = "Base", color="warning", icon="fa-map-signs")
+  valueBox(value = paste0(curArea()$avgBaseDepthMax, '"'),
+           caption = "Base",
+           color="warning",
+           icon="fa-map-signs")
 })
 ```
 
@@ -73,8 +86,11 @@ valueBox(value=paste0(curArea()$avgBaseDepthMax, '"'), caption = "Base", color="
 
 ```{r} 
 renderValueBox({
-weather_icon <- mapDescIcon(areaWeather()$weather)
-valueBox(caption=areaWeather()$weather, value =  areaWeather()$feelslike_string, icon=weather_icon, color="primary")
+  weather_icon <- mapDescIcon(areaWeather()$weather)
+  valueBox(caption = areaWeather()$weather,
+           value =  areaWeather()$feelslike_string,
+           icon=weather_icon,
+           color="primary")
 })
 ```
 
@@ -84,21 +100,29 @@ Charts {data-height=70}
 
 ### Snow Forecast
 ```{r}
+
 renderPlot({
-f <- data.frame(
+  #get forecasted data
+  f <- data.frame(
     label=c("24 Hours", "48 Hours","72 Hours"),
-    value = c(curArea()$predictedSnowFall_24Hours,
+    value = as.numeric(
+            c(curArea()$predictedSnowFall_24Hours,
               curArea()$predictedSnowFall_48Hours,
-              curArea()$predictedSnowFall_72Hours),
+              curArea()$predictedSnowFall_72Hours)),
     stringsAsFactors = FALSE
   )
-f$value <- as.numeric(f$value)
-ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#f4a34b") +
-  scale_x_discrete(labels=f$label, breaks=1:3) +
-  scale_y_continuous(limits=c(0, max(f$value))) + 
-  xlab("") +
-  ylab("")+
-  theme_minimal() 
+  
+  #generate plot  
+  ggplot(f) + 
+    geom_bar(
+      aes(x = factor(1:3), y = value), 
+      stat="identity", 
+      fill = "#f4a34b") +
+    scale_x_discrete(labels = f$label, breaks = 1:3) +
+    scale_y_continuous(limits = c(0, max(f$value))) + 
+    xlab("") +
+    ylab("")+
+    theme_minimal() 
 })
 ```
 

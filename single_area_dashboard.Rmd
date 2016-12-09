@@ -66,7 +66,7 @@ f <- data.frame(
     stringsAsFactors = FALSE
   )
 f$value <- as.numeric(f$value)
-ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#9db0ea") +
+ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#f4a34b") +
   scale_x_discrete(labels=f$label, breaks=1:3) +
   scale_y_continuous(limits=c(0, max(f$value))) + 
   xlab("") +
@@ -97,7 +97,7 @@ ggplot(d, aes(x=factor(pos))) +
          geom_text(aes(y=labloc, label=lab)) +
   xlab("") + ylab("") +
   scale_x_discrete(labels=c("Trails", "Lifts")) +
-  scale_y_continuous(labels=NULL, breaks = NULL) +
+  scale_y_continuous(labels=NULL, breaks = NULL, limits = c(0,110)) +
   scale_fill_manual(values=c("firebrick", "orange", "green"), guide=FALSE) +
   theme_minimal() +
   coord_flip()

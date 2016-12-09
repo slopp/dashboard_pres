@@ -8,7 +8,7 @@ output:
 runtime: shiny
 ---
 
-```{r setup}
+```{r global}
 library(ggplot2)
 source("utils.R")
 library(jsonlite)
@@ -16,11 +16,7 @@ library(flexdashboard)
 library(shiny)
 opts <- getKnownAreas()
 resorts <- opts$resorts
-```
 
-Sidebar {.sidebar}
---------------------
-```{r}
 areas <- reactiveFileReader(5000, session = NULL, filePath = "area.rds", readFunc = readRDS)
 weather <- reactive({
   invalidateLater(60000, session = NULL)
@@ -28,8 +24,75 @@ weather <- reactive({
   Sys.sleep(0.1)
   w
 })
+```
 
-selectInput("resort", "", choices = resorts, selected = "Abasin")
+
+All Resorts
+===========================
+
+Row
+----------
+
+### Weather
+```{r}
+## TODO:
+# label = resort, y-axis = temp, x-axis = weather type
+renderText({areas()[[1]]$resortName})
+```
+
+### Base
+```{r}
+## TODO:
+# bar chart with base area depths
+# use htmlwidget
+# add line for average?
+```
+
+### Runs
+```{r}
+## TODO:
+# plot number of trails open in pie chart 
+```
+
+### Snow Forecast
+```{r}
+## TODO:
+# plot lines for each resort
+# plot bars as group average
+```
+
+### Recommended
+```{r}
+## TODO:
+# implement some type of weighted average and create recommendation
+# make weights adjustable
+```
+
+
+
+Acknowledgement {data-height=2}
+------------
+![](sclogo.png) ![](wulogo.jpg) ![](rslogo.png) <br>
+Data Courtesy of Snocountry and Weather Underground. Report by RStudio. <br>
+Not to be used for commercial purposes.
+
+###
+```{r}
+renderText({
+  curArea()
+  areaWeather()
+  paste0("Last Updated on: ",Sys.Date(), " at ", format(Sys.time(), '%r'))
+})
+```
+
+
+Specific Resort
+============================
+
+Sidebar {.sidebar}
+--------------------
+```{r}
+selectInput("resort", "Select Resort", choices = resorts, selected = "Abasin")
 
 
 curArea <- reactive({
@@ -93,7 +156,7 @@ f <- data.frame(
     stringsAsFactors = FALSE
   )
 f$value <- as.numeric(f$value)
-ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#f4a34b") +
+ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#9db0ea") +
   scale_x_discrete(labels=f$label, breaks=1:3) +
   scale_y_continuous(limits=c(0, max(f$value))) + 
   xlab("") +
@@ -126,7 +189,7 @@ ggplot(d, aes(x=factor(pos))) +
          geom_text(aes(y=labloc, label=lab)) +
   xlab("") + ylab("") +
   scale_x_discrete(labels=c("Trails", "Lifts")) +
-  scale_y_continuous(labels=NULL, breaks = NULL, limits = c(0,110)) +
+  scale_y_continuous(labels=NULL, breaks = NULL) +
   scale_fill_manual(values=c("firebrick", "orange", "green"), guide=FALSE) +
   theme_minimal() +
   coord_flip()

@@ -61,21 +61,26 @@ ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "
 ### Runs
 
 ```{r}
-d <- data.frame(
+
+## Grab data on open runs and lifts (mostly interesting in the pre-season)
+runs <- data.frame(
   cur = c(area$openDownHillTrails, area$openDownHillLifts),
   max = c(area$maxOpenDownHillTrails, area$maxOpenDownHillLifts),
   pos = 1:2,
   stringsAsFactors = FALSE
 )
 
-d <- lapply(d, as.numeric)
-d$labels <- c("Runs", "Lifts")
-d$percent <- round((d$cur / d$max)*100, digits=0)
-d$lab <- paste0(d$cur, "/", d$max, " ", d$percent, "%")
-d$labloc <- d$percent+10
-d$col <- ifelse(d$percent < 80, ifelse(d$percent < 50, 1, 2), 3)
-d <- as.data.frame(d)
-ggplot(d, aes(x=factor(pos))) + 
+## Add some computed metrics to prepare for plot
+runs <- lapply(runs, as.numeric)
+runs$labels <- c("Runs", "Lifts")
+runs$percent <- round((runs$cur / runs$max)*100, digits=0)
+runs$lab <- paste0(runs$cur, "/", runs$max, " ", runs$percent, "%")
+runs$labloc <- runs$percent+10
+runs$col <- ifelse(runs$percent < 80, ifelse(runs$percent < 50, 1, 2), 3)
+runs <- as.data.frame(runs)
+
+## Plot
+ggplot(runs, aes(x=factor(pos))) + 
          geom_bar(aes(y=100), fill="lightgrey", stat="identity") +
          geom_bar(aes(y=percent, fill=factor(col)), stat="identity") + 
          geom_text(aes(y=labloc, label=lab)) +

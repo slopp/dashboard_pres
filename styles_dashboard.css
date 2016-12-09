@@ -1,6 +1,6 @@
 .navbar-inverse {
-    background-color: #9db0ea;
-    border-color: #9db0ea;
+    background-color: #2c62ba;
+    border-color: #2c62ba;
 }
 
 .bg-primary {
@@ -8,11 +8,11 @@
 }
 
 .bg-warning {
-   background-color: #9db0ea;
+   background-color: #4bbcf4;
    color: #ffffff;
 }
 
 .section.sidebar {
-    background-color: #e8edf4;
+    background-color: #4bbcf4;
 }
 

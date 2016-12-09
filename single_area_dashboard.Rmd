@@ -31,25 +31,29 @@ Summary {data-height=15}
 
 ### Last 48 Hours {data-width=30}
 ```{r}
-
 valueBox(caption = area$secondarySurfaceCondition,
-                 
          value = paste0(area$snowLast48Hours,'"'),
-         icon="ion-ios-snowy")
+         icon = "ion-ios-snowy",
+         color = "primary")
 ```
 
 ### Base {data-width=20}
 
 ```{r} 
-
-valueBox(value=paste0(area$avgBaseDepthMax, '"'), caption = "Base", color="warning", icon="fa-map-signs")
+valueBox( value = paste0(area$avgBaseDepthMax, '"'),
+          caption = "Base", 
+          color="warning", 
+          icon="fa-map-signs")
 ```
 
 ### Weather {data-width=30}
 
 ```{r} 
 weather_icon <- mapDescIcon(weather$weather)
-valueBox(caption=weather$weather, value =  weather$feelslike_string, icon=weather_icon, color="primary")
+valueBox(caption = weather$weather,
+         value = weather$feelslike_string,
+         icon=weather_icon, 
+         color="primary")
 ```
 
 
@@ -58,6 +62,7 @@ Charts {data-height=70}
 
 ### Snow Forecast
 ```{r}
+#get forecasted data
 f <- data.frame(
     label=c("24 Hours", "48 Hours","72 Hours"),
     value = c(area$predictedSnowFall_24Hours,
@@ -66,9 +71,15 @@ f <- data.frame(
     stringsAsFactors = FALSE
   )
 f$value <- as.numeric(f$value)
-ggplot(data=f) + geom_bar(aes(x=factor(1:3), y=value), stat="identity", fill = "#f4a34b") +
-  scale_x_discrete(labels=f$label, breaks=1:3) +
-  scale_y_continuous(limits=c(0, max(f$value))) + 
+
+#plot
+ggplot(f) + 
+  geom_bar(
+    aes(x=factor(1:3), y=value),
+    stat = "identity",
+    fill = "#f4a34b") +
+  scale_x_discrete(labels = f$label, breaks = 1:3) +
+  scale_y_continuous(limits = c(0, max(f$value))) + 
   xlab("") +
   ylab("")+
   theme_minimal() 

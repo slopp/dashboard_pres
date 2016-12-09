@@ -1,3 +1,10 @@
+
+
+#' Map Weather Descritption to Icon
+#'
+#' @param desc A weather description from the weather underground API
+#'
+#' @return An icon code with a corresponding ion weather icon
 mapDescIcon <- function(desc){
   desc
   desc = sub(pattern = "Light", replacement = "", desc, fixed = TRUE)
@@ -12,6 +19,12 @@ mapDescIcon <- function(desc){
   curIcon
 }
 
+
+#' Map Temperature to Icon
+#'
+#' @param tmp Temperature in F
+#'
+#' @return A font-awesome thermometer icon filled based on the temp
 mapTempIcon <- function(tmp){
   tempIcon = "fa-thermometer-half"
   if(tmp < 15)
@@ -20,6 +33,15 @@ mapTempIcon <- function(tmp){
     tempIcon = "fa-thermometer-full"
   tempIcon
 }
+
+#' Know Ski Areas
+#' Function serves as a storage location for known Ski Areas
+#' A "known" ski area includes:
+#'  - resorts: name used in the app
+#'  - ids: id mapping the name to a SnoCountry resort code
+#'  - weather_underground: lat/lon of the resort used for weather calls and mapping
+#' @return
+#' @export
 getKnownAreas <- function(){
   data.frame(
     resorts = c("Abasin", 
@@ -48,6 +70,9 @@ getKnownAreas <- function(){
   )
 }
 
+
+# Helper functions to parse the KnownArea dataframe
+
 returnAreaID <- function(area_name) {
  areas <- getKnownAreas()
  areas[which(areas$resorts==area_name),2]
@@ -59,6 +84,12 @@ returnAreaLatLon <- function(area_name){
   
 }
 
+
+#' Get SnoCountry Data
+#' Queries the snocountry API to get the daily report for the resort
+#' @param area_name resort name
+#'
+#' @return list containing daily resort information such as snow totals & open runs
 getAreaData <- function(area_name){
   id <- returnAreaID(area_name)
   base_url <- "http://feeds.snocountry.net/conditions.php?apiKey=SnoCountry.example"
@@ -68,8 +99,14 @@ getAreaData <- function(area_name){
   results$items
 }
 
+#' Get Weather Underground Weather Data
+#' gets the current weather by querying Weather Underground
+#' @param area_name 
+#'
+#' @return
 getCurrentWeather <- function(area_name){
   loc <- returnAreaLatLon(area_name)
+  # TODO: Hide API key!
   base_url <- "http://api.wunderground.com/api/cbd1b7a6e2e439ea/conditions/q/"
   results <- fromJSON(paste0(base_url, loc, ".json"))
   results$current_observation 

@@ -12,8 +12,13 @@ runtime: shiny
 library(ggplot2)
 source("utils.R")
 library(jsonlite)
+library(tidyr)
 library(flexdashboard)
 library(shiny)
+library(ggrepel)
+library(leaflet)
+library(magrittr)
+library(plotly)
 opts <- getKnownAreas()
 resorts <- opts$resorts
 
@@ -33,49 +38,191 @@ weather <- reactive({
   w
 })
 
+
+# Define some variables that hold information for all resorts
+temp <- reactive({
+  as.numeric(sapply(weather(), function(.){.$feelslike_f}))
+})
+
+base <- reactive({
+  as.numeric(sapply(areas(), function(.){.$avgBaseDepthMax}))
+})
+
+fresh <- reactive({
+  f <- as.numeric(sapply(areas(), function(.){.$snowLast48Hours}))
+  f[is.na(f)] <- 0
+  f
+})
+
+runs <- reactive({
+  as.numeric(sapply(areas(), function(.){.$openDownHillTrails}))
+})
+
+forecast <- reactive({
+  f24 <- as.numeric(sapply(areas(), function(.){.$predictedSnowFall_24Hours}))
+  f48 <- as.numeric(sapply(areas(), function(.){.$predictedSnowFall_48Hours}))
+  f72 <- as.numeric(sapply(areas(), function(.){.$predictedSnowFall_72Hours}))
+
+  f <- data.frame(
+    H24 = f24,
+    H48 = f48,
+    H72 = f72,
+    resorts = resorts,
+    stringsAsFactors = FALSE
+  )
+  
+  ftidy <- gather(f, value = "forecast", key = "period", -resorts)
+  fclean <- separate(ftidy, period, sep ="H", into = c("jnk", "hour")) %>% 
+    .[,-2]
+  fclean$hour <- as.numeric(fclean$hour)
+  fclean
+})
+
+
 ```
 
 
 All Resorts
 ===========================
 
+Sidebar {.sidebar}
+--------------
+```{r}
+p("Whats important to you?")
+
+
+# Helper function
+makeImportanceSlider <- function(id, label){
+  sliderInput(inputId = id,
+              label = label,
+              min = 0,
+              max = 1,
+              value = 0.5,
+              ticks = FALSE)
+}
+
+makeImportanceSlider("warmth", "Warmth")
+makeImportanceSlider("fresh", "New Snow")
+makeImportanceSlider("base", "Base Depth")
+makeImportanceSlider("totruns", "# of Runs")
+
+
+```
+
 Row
-----------
+--------------
 
-### Weather
-```{r}
-## TODO:
-# label = resort, y-axis = temp, x-axis = weather type
-renderText({areas()[[1]]$resortName})
-```
+### Recommended Resort
 
-### Base
 ```{r}
-## TODO:
-# bar chart with base area depths
-# use htmlwidget
-# add line for average?
-```
+# rank the resort based on the user's input
+winner <- reactive({  
+  weights <- c(
+    input$warmth,
+    input$fresh,
+    input$base,
+    input$totruns
+  )
+  measures <- list(warmth = temp(),
+                   fresh = fresh(),
+                   base = base(),
+                   totruns = runs())
+  ranks <- sapply(measures, rank) 
+  weighted_ranks <- ranks%*%weights
+  winner <- resorts[which(max(weighted_ranks)==weighted_ranks)[1]]
+  winner
+})
 
-### Runs
-```{r}
-## TODO:
-# plot number of trails open in pie chart 
+renderLeaflet({
+  data <- getKnownAreas()
+  data <- data %>% separate(weather_underground, 
+                         into = c("lat","lon"),
+                         sep=",")
+  pick <- data[which(resorts==winner()),]
+  
+  leaflet(data) %>% 
+    addCircleMarkers(~lon, ~lat, popup=~resorts) %>% 
+    addPopups(lng = pick$lon, lat = pick$lat, popup=pick$resorts) %>% 
+    addProviderTiles("CartoDB.Positron") %>% 
+    setView(lng = pick$lon, lat = pick$lat, zoom=6)
+    
+})
 ```
 
 ### Snow Forecast
 ```{r}
-## TODO:
-# plot lines for each resort
-# plot bars as group average
+renderPlotly({
+  
+  p <- forecast() %>% 
+    ggplot(aes(x = hour, y = forecast, color = resorts)) +
+    geom_jitter() +
+    ylab("Snowfall (in)") +
+    xlab("Hour Forecast") +
+    theme_minimal() +
+    scale_color_brewer()
+  
+  ggplotly(p,tooltip = c("forecast", "resorts"))
+})
 ```
 
-### Recommended
+
+Row
+-----------
+
+### Weather
 ```{r}
-## TODO:
-# implement some type of weighted average and create recommendation
-# make weights adjustable
+renderPlot({
+  type <- sapply(weather(), function(.){.$weather})
+  
+  all_weather <- data.frame(resort=resorts,
+                            temp=temp(),
+                            type=type,
+                            stringsAsFactors = FALSE)
+  
+  ggplot(all_weather, aes(x=type, y=temp, label=resort, color=temp))+
+    geom_label_repel() +
+    scale_color_continuous(guide=FALSE) +
+    xlab("") +
+    ylab("Temperature (F)") +
+    theme_minimal() 
+})  
 ```
+
+### Base
+```{r}
+renderPlot({
+  d <- data.frame(resorts = resorts, base = base())
+  avg_base <- mean(d$base)
+  min_resort <- which(d$base == min(d$base))
+  ggplot(d, aes(x = reorder(resorts,base), y = base)) +
+    geom_bar(fill = "#f4a34b", stat = "identity") +
+    xlab("") +
+    ylab("Base Depth (in)") +
+    theme_minimal() +
+    geom_hline(yintercept = avg_base, color = "#2c62ba") +
+    geom_label(label = "Average",
+               color = "#2c62ba",
+               aes(y = avg_base, x = resorts[min_resort])) +
+    coord_flip()
+})
+```
+
+### Runs
+```{r}
+renderPlot({
+  d <- data.frame(resorts = resorts, runs = runs())
+  ggplot(d, aes(x = reorder(resorts,runs) , y = runs)) +
+    geom_bar(stat = "identity", fill = "#2c62ba") +
+    xlab("") +
+    ylab("") +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle=45)
+    )
+})
+```
+
+
 
 
 
@@ -94,6 +241,8 @@ renderText({
 })
 ```
 
+Specific Resort
+=======================
 
 Sidebar {.sidebar}
 --------------------
@@ -223,7 +372,7 @@ Acknowledgement {data-height=2}
 Data Courtesy of Snocountry and Weather Underground. Report by RStudio. <br>
 Not to be used for commercial purposes.
 
-###
+### {.no-title}
 ```{r}
 renderText({
   curArea()

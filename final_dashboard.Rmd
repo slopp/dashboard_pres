@@ -21,6 +21,7 @@ library(dplyr)
 library(dygraphs)
 library(lubridate)
 library(xts)
+
 opts <- getKnownAreas()
 resorts <- opts$resorts
 
@@ -136,14 +137,16 @@ winner <- reactive({
 })
 
 renderLeaflet({
-  data <- getKnownAreas()
-  data <- data %>% separate(weather_underground, 
+  data <- getKnownAreas() %>%
+    separate(weather_underground, 
                          into = c("lat","lon"),
                          sep=",")
+  
   pick <- data[which(resorts==winner()),]
   
   leaflet(data) %>% 
     addCircleMarkers(~lon, ~lat, popup=~resorts) %>% 
+    #highlight the winner 
     addPopups(lng = pick$lon, lat = pick$lat, popup=pick$resorts) %>% 
     addProviderTiles("CartoDB.Positron") %>% 
     setView(lng = pick$lon, lat = pick$lat, zoom=6)
@@ -154,28 +157,28 @@ renderLeaflet({
 ### Snow Forecast
 ```{r}
 renderDygraph({
-  f <- forecast()
-  
   # cummulative sum of forecast
-  f <- f %>% 
+  f <- forecast() %>% 
     group_by(resorts) %>% 
-    mutate(forecast= cumsum(forecast))
+    mutate(forecast = cumsum(forecast))
   
   
   # identify resort with highest
-  id <- which(f$forecast==max(f$forecast))[1]
+  id <- which(f$forecast == max(f$forecast))[1]
   max_resort <- f$resorts[id]
 
   #dygraphs expects non-tidy, xts data :/
-  f <- spread(f, key=resorts, value = forecast)
+  f <- spread(f, key = resorts, value = forecast)
   f$hour <- today() + hours(f$hour)
-  f <- xts(f, order.by=f$hour)
+  f <- xts(f, order.by = f$hour)
   f$hour <- NULL
   
+  # color the top forecast blue, all others grey
   col <- data.frame(names = colnames(f),
-                    colors = rep("grey", 7),
+                    colors = rep("grey", length(resorts)),
                     stringsAsFactors = FALSE)
-  col[which(col$names==max_resort),2] <- "#2c62ba"
+  
+  col[which(col$names == max_resort),2] <- "#2c62ba"
 
   
   #plot
@@ -203,9 +206,13 @@ renderPlot({
                             type=type,
                             stringsAsFactors = FALSE)
   
-  ggplot(all_weather, aes(x=type, y=temp, label=resort, color=temp))+
+  ggplot(all_weather, 
+         aes(x = type,
+             y = temp,
+             label = resort,
+             color = temp))+
     geom_label_repel() +
-    scale_color_continuous(guide=FALSE) +
+    scale_color_continuous(guide = FALSE) +
     xlab("") +
     ylab("Temperature (F)") +
     theme_minimal() 

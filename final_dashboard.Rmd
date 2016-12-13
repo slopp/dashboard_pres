@@ -17,8 +17,10 @@ library(flexdashboard)
 library(shiny)
 library(ggrepel)
 library(leaflet)
-library(magrittr)
-library(plotly)
+library(dplyr)
+library(dygraphs)
+library(lubridate)
+library(xts)
 opts <- getKnownAreas()
 resorts <- opts$resorts
 
@@ -71,7 +73,7 @@ forecast <- reactive({
     stringsAsFactors = FALSE
   )
   
-  ftidy <- gather(f, value = "forecast", key = "period", -resorts)
+  ftidy <- gather(f, value = "forecast", key = "period", -resorts) 
   fclean <- separate(ftidy, period, sep ="H", into = c("jnk", "hour")) %>% 
     .[,-2]
   fclean$hour <- as.numeric(fclean$hour)
@@ -151,17 +153,39 @@ renderLeaflet({
 
 ### Snow Forecast
 ```{r}
-renderPlotly({
+renderDygraph({
+  f <- forecast()
   
-  p <- forecast() %>% 
-    ggplot(aes(x = hour, y = forecast, color = resorts)) +
-    geom_jitter() +
-    ylab("Snowfall (in)") +
-    xlab("Hour Forecast") +
-    theme_minimal() +
-    scale_color_brewer()
+  # cummulative sum of forecast
+  f <- f %>% 
+    group_by(resorts) %>% 
+    mutate(forecast= cumsum(forecast))
   
-  ggplotly(p,tooltip = c("forecast", "resorts"))
+  
+  # identify resort with highest
+  id <- which(f$forecast==max(f$forecast))[1]
+  max_resort <- f$resorts[id]
+
+  #dygraphs expects non-tidy, xts data :/
+  f <- spread(f, key=resorts, value = forecast)
+  f$hour <- today() + hours(f$hour)
+  f <- xts(f, order.by=f$hour)
+  f$hour <- NULL
+  
+  col <- data.frame(names = colnames(f),
+                    colors = rep("grey", 7),
+                    stringsAsFactors = FALSE)
+  col[which(col$names==max_resort),2] <- "#2c62ba"
+
+  
+  #plot
+  dygraph(f) %>% 
+      dyOptions(colors = col$colors) %>% 
+      dyHighlight(highlightCircleSize = 5, 
+              highlightSeriesBackgroundAlpha = 0.2,
+              hideOnMouseOut = FALSE)
+      
+  
 })
 ```
 
@@ -193,7 +217,7 @@ renderPlot({
 renderPlot({
   d <- data.frame(resorts = resorts, base = base())
   avg_base <- mean(d$base)
-  min_resort <- which(d$base == min(d$base))
+  min_resort <- which(d$base == min(d$base))[1]
   ggplot(d, aes(x = reorder(resorts,base), y = base)) +
     geom_bar(fill = "#f4a34b", stat = "identity") +
     xlab("") +

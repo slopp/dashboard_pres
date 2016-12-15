@@ -11,7 +11,7 @@ mapDescIcon <- function(desc){
   desc = sub(pattern = "Heavy", replacement = "", desc, fixed = TRUE)
   curIcon = "ion-android-sunny"
   if (grepl(pattern = "*Snow*|*Ice*", x = desc))
-    curIcon = "ion-ios-snow"
+    curIcon = "ion-ios-snowy"
   if (grepl(pattern = "*Rain*|*Drizzle*|*Hail*", x = desc))
     curIcon = "ion-ios-rainy-outline"
   if (grepl(pattern = "*Cloud*|*Overcast*|*Fog*", x= desc))

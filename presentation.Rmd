@@ -44,6 +44,8 @@ Discuss background on ski metrics:
 
 ---
 name: param_template
+count: false
+
 
 ## Parameterized Report
 
@@ -111,6 +113,7 @@ show the results
 
 ---
 name: flexdashboard
+count: false
 
 ## Parameterized Dashboard
 
@@ -199,6 +202,7 @@ gauge(percent,
 
 ---
 name: shiny
+count: false
 
 ## Dashboard + Shiny
 
@@ -217,6 +221,7 @@ Goals:
 ---
 name: shiny1
 template: shiny
+count: false
 
 - Let users select the resort in real time
 
@@ -342,8 +347,7 @@ conditions <- reactive({
 ```
 
 ### Problem! 
-### Could Call API >> Data Changes
-### OR Data Change >> Call API
+### Updqtes with change in input, not change in data
 
 ---
 template: shiny
@@ -394,3 +398,4 @@ I am querying a file for changes, *but I know when it will change!*
 class: inverse, middle, center
 
 # Questions?
+# Find Me After

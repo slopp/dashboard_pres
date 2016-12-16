@@ -47,37 +47,6 @@ name: param_template
 
 ## Parameterized Report
 
-
----
-name: background
-template: param_template
-
- Background:
-
-```{r}
-
-library(httr)
-
-getKnownAreas()
-
-getAreaData <- function(area_name){
-  id <- returnAreaID(area_name)
-  base_url <- "http://feeds.snocountry.net/conditions.php?apiKey=SnoCountry.example"
-  results <- fromJSON(paste0(base_url, "&ids=", id))
-  if(results$totalItems != 1)
-    stop("Error accessing Snocountry API")
-  results$items
-}
-
-getCurrentWeather <- function(area_name){
-  loc <- returnAreaLatLon(area_name)
-  base_url <- "http://api.wunderground.com/api/####API_KEY####/conditions/q/"
-  results <- fromJSON(paste0(base_url, loc, ".json"))
-  results$current_observation 
-}
-
-```
-
 ---
 template: param_template
 
@@ -106,8 +75,6 @@ lapply(resorts, function(r){rmarkdown::render(params = list(resort = r))})
 
 
 ### Add parameters, access with params$
-
---
 
 
 ---
@@ -139,7 +106,7 @@ class: inverse, center, middle
 ???
 
 show the results
----
+
 
 
 ---
@@ -179,11 +146,12 @@ Row
 template: flexdashboard
 class: inverse, middle, center
 
-# Fake Demo
+# Demo
 
 ???
 
-For this one I'm thinking of just doing the helloworld example
+Should I show the demo in RSP or RSC or both?
+I think just RSC 
 
 ---
 template: flexdashboard
@@ -228,22 +196,6 @@ gauge(percent,
 
 ### Colors can depend on value
 
----
-template: flexdashboard
-class: inverse, middle, center
-
-# Real Demo 
-
-???
-
-Now it is time to show the actual ski resort dashboard
-
-
----
-template: flexdashboard
-
-### Parameterized flexdashboards are awesome!
-### They can also be interactive (with htmlwidgets)
 
 ---
 name: shiny

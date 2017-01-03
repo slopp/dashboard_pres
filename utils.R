@@ -107,8 +107,11 @@ getAreaData <- function(area_name){
 getCurrentWeather <- function(area_name){
   loc <- returnAreaLatLon(area_name)
   # TODO: Hide API key!
-  base_url <- "http://api.wunderground.com/api/cbd1b7a6e2e439ea/conditions/q/"
+  base_url <- "http://api.wunderground.com/api/****YOUR_API_KEY*****/conditions/q/"
   results <- fromJSON(paste0(base_url, loc, ".json"))
+  while(is.null(results$current_observation)){
+    results <- fromJSON(paste0(base_url, loc, ".json"))
+  }
   results$current_observation 
 }
 

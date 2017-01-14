@@ -364,7 +364,7 @@ saveRDS(areas, "areas.Rdat")
 
 -  In our dashboard: 
 ```{r}
-areas <- reactiveFileReader(n, "areasRdat", readRDS)
+areas <- reactiveFileReader(n, "areas.Rdat", readRDS)
 conditions <- reactive({
   areas[[input$resort]]
 })

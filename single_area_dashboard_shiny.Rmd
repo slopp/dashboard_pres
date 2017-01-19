@@ -27,7 +27,7 @@ Sidebar {.sidebar}
 # this could be put in the data chunk of shiny pre-rendered
 areas <- reactiveFileReader(5000,
                             session = NULL,
-                            filePath = "area.rds",
+                            filePath = "/tmp_shared/area.rds",
                             readFunc = readRDS)
 
 # check the weather for all resorts every minute
